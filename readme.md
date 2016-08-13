@@ -1,11 +1,7 @@
+---
+title: SmartSeatæºä»£ç 
+tags: SmartSeat
+---
 
-±¾ÊµÑé½«ÊµÏÖÈçÏÂ¹¦ÄÜ£º±¾ÊµÑéÒÆÖ²µÄÊÇ3.03°æ±¾µÄUCOSIII£¬Ö§³ÖFPU¡£±¾ÊµÑéÍ¨¹ý½¨Á¢3¸ö¼òµ¥µÄÈÎÎñÀ´²âÊÔUCOSIIIµÄÒÆÖ²ºÍFPUµÄÒÆÖ²ÊÇ·ñÒÆÖ²³É¹¦¡£±¾ÊµÑéÒª´ò¿ª´®¿Úµ÷ÊÔÖúÊÖ£¬ÎÒÃÇ¹Û²ìµ½¿ª·¢°åÉÏµÄLED0ºÍLED1ÔÚÉÁË¸£¬´®¿Úµ÷ÊÔÖúÊÖÃ¿500ms½ÓÊÕµ½Ò»´Î¿ª·¢°å·¢ËÍµÄÊý¾Ý£¬Êý¾ÝÒÔ0.01µÝÔö¡£
 
-
-               	ÕýµãÔ­×Ó@ALIENTEK
-               	2014-11-3
-		¹ãÖÝÊÐÐÇÒíµç×Ó¿Æ¼¼ÓÐÏÞ¹«Ë¾
-                ÁªÏµµç»°£¨´«Õæ£©£º020-38271790
-	       	¹ºÂò£ºhttp://shop62103354.taobao.com
-                      http://shop62057469.taobao.com
-               	¼¼ÊõÖ§³ÖÂÛÌ³£ºwww.openedv.com
+æ™ºèƒ½ååž«

@@ -445,7 +445,7 @@ ARM Macro Assembler    Page 7
   311 00000220                 END
 Command Line: --debug --xref --diag_suppress=9931 --cpu=Cortex-M3 --apcs=interw
 ork --depend=..\obj\lib_mem_a.d -o..\obj\lib_mem_a.o -IG:\下载\3，扩展例程\4，U
-COS扩展例程\TEST\SEAT_TEST\USER\RTE -I"C:\Program Files (x86)\keil5\ARM\PACK\Ke
+COS扩展例程\TEST\SmartSeat\USER\RTE -I"C:\Program Files (x86)\keil5\ARM\PACK\Ke
 il\STM32F1xx_DFP\1.0.5\Device\Include" -I"C:\Program Files (x86)\keil5\ARM\CMSI
 S\Include" --predefine="__UVISION_VERSION SETA 514" --predefine="STM32F10X_HD S
 ETA 1" --list=.\lib_mem_a.lst ..\UCOSIII\uC-LIB\Ports\ARM-Cortex-M3\RealView\li

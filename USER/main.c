@@ -17,17 +17,7 @@
 #include "wkup.h"
 #include "gpio.h"
 
-/************************************************
- ALIENTEK MiniSTM32开发板UCOS实验
- 例4-1 UCOSIII UCOSIII移植
- 技术支持：www.openedv.com
- 淘宝店铺：http://eboard.taobao.com 
- 关注微信公众平台微信号："正点原子"，免费获取STM32资料。
- 广州市星翼电子科技有限公司  
- 作者：正点原子 @ALIENTEK
-************************************************/
 
-//UCOSIII中以下优先级用户程序不能使用，ALIENTEK
 //将这些优先级分配给了UCOSIII的5个系统内部任务
 //优先级0：中断服务服务管理任务 OS_IntQTask()
 //优先级1：时钟节拍任务 OS_TickTask()
@@ -155,9 +145,6 @@ u8 adc_count_flag = 0;	//平衡采样完成标志位
 u8 lowpower_flag = 0;		//低电量标志位
 u8 led_green_flag = 0;	//绿色LED灯状态标志位
 u8 led_red_flag = 0;		//红色LED灯状态标志位
-//u8 data_push_flag = 0;
-
-//u8 time_init_flag = 0;
 
 float tmr_active_correct = 0;
 
