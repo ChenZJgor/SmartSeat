@@ -443,10 +443,10 @@ void adc_task(void *p_arg)
 			AT24CXX_Write(146,datatemp,87);
 			time_init_flag = 1;
 		}*/
-/*		AT24CXX_Init();
-		Data_Store(1);
-		AT24CXX_Read(30,datatemp,29);
-		for(i = 0; i < 30; i++)
+/*		Posture_Store('A');
+		AT24CXX_Init();
+		AT24CXX_Read(0,datatemp,54);
+		for(i = 0; i < 54; i++)
 			printf("data %d = %d  \n",i,datatemp[i]);
 		IIC_Off();
 */
@@ -899,6 +899,28 @@ void battery_task(void *p_arg)
 	while(1){
 		battery = Get_Adc_Average(ADC_Channel_3,10);
 		if(battery < 865){
+			LED1_OFF();
+			led_red_flag = OFF;
+			LED0_OFF();
+			led_green_flag = OFF;
+			Motor_Contrl(MOTOR_NEGATIVE);											//关闭电机
+			motor_flag = OFF;
+			Bee_Contrl(BEE_NEGATIVE);													//关闭蜂鸣器
+			bee_flag = OFF;
+			Power_Contrl(POWER_NEGATIVE);					//关闭应变片电源
+			power_flag = OFF;
+			
+			ADC_Cmd(ADC1, DISABLE);			//关闭ADC1
+			RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, DISABLE);			//关闭串口1通道时钟
+			RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, DISABLE); 		//关闭串口3通道时钟
+			USART_Cmd(USART1, DISABLE);	//关闭串口1
+			USART_Cmd(USART3, DISABLE);	//关闭串口3
+			RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1	, DISABLE );	  //关闭ADC1通道时钟
+			RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, DISABLE);			//关闭GPIOA通道时钟
+			RCC_APB2PeriphClockCmd(	RCC_APB2Periph_GPIOB, DISABLE );		//关闭GPIOB通道时钟
+			Sys_Enter_Standby();
+		}
+		if(battery < 878){
 			lowpower_flag = 1;
 			if(led_red_flag == OFF){
 				LED1_ON();

@@ -4,13 +4,14 @@
 //#include "delay.h" 
 #include "delay.h"
 #include "ds1302.h"
+#include "usart3.h"	
 //Mini STM32开发板
 //24CXX驱动函数(适合24C01~24C16,24C32~256未经过测试!有待验证!)
 //正点原子@ALIENTEK
 //2010/6/10
 //V1.2
 
-u8 store_stack[29] = {0};	//储存缓冲区
+u8 store_stack[53] = {0};	//储存缓冲区
 
 //初始化IIC接口
 void AT24CXX_Init(void)
@@ -151,15 +152,15 @@ void Data_Store(u16 data)
 	time_pros();
 	DS1302_Off();
 	i = AT24CXX_ReadOneByte(0);
-	writeaddr = 1 + 29 * i;
+	writeaddr = 1 + 53 * i;
 	verify = AT24CXX_ReadLenByte(writeaddr, 2);
 	data_temp = disp[0] * 100 + disp[1] * 40 + disp[2];
 	
 	if(verify > 0){
 		if(data_temp > verify){
-			writeaddr += 29;
-			memset(store_stack,0,29);
-			AT24CXX_Write(writeaddr,store_stack,29);
+			writeaddr += 53;
+			memset(store_stack,0,53);
+			AT24CXX_Write(writeaddr,store_stack,53);
 			
 			store_stack[0] = data_temp & 0xff;
 			store_stack[1] = (data_temp >> 8) & 0xff;
@@ -172,14 +173,14 @@ void Data_Store(u16 data)
 			i = AT24CXX_ReadOneByte(writeaddr+houraddr);
 			store_stack[houraddr] = data + i;
 			//store_stack[houraddr] = data;
-			AT24CXX_Write(writeaddr,store_stack,29);
+			AT24CXX_Write(writeaddr,store_stack,53);
 			
 			i = AT24CXX_ReadOneByte(0);
 			i++;
-			if(i>=8){
+			if(i>=4){
 				i = 0;
-				memset(store_stack,0,29);
-				AT24CXX_Write(1,store_stack,29);
+				memset(store_stack,0,53);
+				AT24CXX_Write(1,store_stack,53);
 			}
 			AT24CXX_WriteOneByte(0,i);
 		}
@@ -190,13 +191,14 @@ void Data_Store(u16 data)
 			AT24CXX_WriteOneByte(writeaddr+houraddr,store_stack[houraddr]);
 		}
 		else if(data_temp < verify){
-			printf("date data err.\n");
+			if(READ_BLU)
+				printf("date data err.\n");
 		}
 		memset(disp,0,6);
 	}
 	else if(verify == 0){
-		memset(store_stack,0,29);
-		AT24CXX_Write(writeaddr,store_stack,29);
+		memset(store_stack,0,53);
+		AT24CXX_Write(writeaddr,store_stack,53);
 			
 		store_stack[0] = data_temp & 0xff;
 		store_stack[1] = (data_temp >> 8) & 0xff;
@@ -208,7 +210,77 @@ void Data_Store(u16 data)
 			
 		i = AT24CXX_ReadOneByte(writeaddr+houraddr);
 		store_stack[houraddr] = data + i;
-		AT24CXX_Write(writeaddr,store_stack,29);
+		AT24CXX_Write(writeaddr,store_stack,53);
+	}
+	IIC_Off();
+}
+void Posture_Store(u8 posture)
+{
+	u8 i = 0,writeaddr = 0,houraddr = 0;
+	u16 data_temp = 0, verify = 0;
+	
+	AT24CXX_Init();
+	DS1302_GPIO_Init();
+	Read_rtc();
+	time_pros();
+	DS1302_Off();
+	i = AT24CXX_ReadOneByte(0);
+	writeaddr = 1 + 53 * i;
+	verify = AT24CXX_ReadLenByte(writeaddr, 2);
+	data_temp = disp[0] * 100 + disp[1] * 40 + disp[2];
+	
+	if(verify > 0){
+		if(data_temp > verify){
+			writeaddr += 53;
+			memset(store_stack,0,53);
+			AT24CXX_Write(writeaddr,store_stack,53);
+			
+			store_stack[0] = data_temp & 0xff;
+			store_stack[1] = (data_temp >> 8) & 0xff;
+			store_stack[2] = disp[0];
+			store_stack[3] = disp[1];
+			store_stack[4] = disp[2];
+		
+			houraddr = 29 + disp[3];
+		
+			store_stack[houraddr] = posture;
+			//store_stack[houraddr] = data;
+			AT24CXX_Write(writeaddr,store_stack,53);
+			
+			i = AT24CXX_ReadOneByte(0);
+			i++;
+			if(i>=4){
+				i = 0;
+				memset(store_stack,0,53);
+				AT24CXX_Write(1,store_stack,53);
+			}
+			AT24CXX_WriteOneByte(0,i);
+		}
+		else if(data_temp == verify){
+			houraddr = 29 + disp[3];
+			store_stack[houraddr] = posture;
+			AT24CXX_WriteOneByte(writeaddr+houraddr,store_stack[houraddr]);
+		}
+		else if(data_temp < verify){
+			if(READ_BLU)
+				printf("date data err.\n");
+		}
+		memset(disp,0,6);
+	}
+	else if(verify == 0){
+		memset(store_stack,0,53);
+		AT24CXX_Write(writeaddr,store_stack,53);
+			
+		store_stack[0] = data_temp & 0xff;
+		store_stack[1] = (data_temp >> 8) & 0xff;
+		store_stack[2] = disp[0];
+		store_stack[3] = disp[1];
+		store_stack[4] = disp[2];
+		
+		houraddr = 29 + disp[3];
+			
+		store_stack[houraddr] = posture;
+		AT24CXX_Write(writeaddr,store_stack,53);
 	}
 	IIC_Off();
 }

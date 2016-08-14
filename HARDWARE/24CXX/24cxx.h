@@ -28,6 +28,7 @@ void AT24CXX_Read(u16 ReadAddr,u8 *pBuffer,u16 NumToRead);   	//从指定地址开始读
 u8 AT24CXX_Check(void);  //检查器件
 void AT24CXX_Init(void); //初始化IIC
 void Data_Store(u16 data);	//数据储存
+void Posture_Store(u8 posture);	//姿势储存
 #endif
 
 

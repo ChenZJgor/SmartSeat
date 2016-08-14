@@ -3,6 +3,7 @@
 #include "24cxx.h"
 #include "adc.h"
 #include "stm32f10x_adc.h"
+#include "ds1302.h"
 ////////////////////////////////////////////////////////////////////////////////// 	 
 //如果使用os,则包括下面的头文件即可.
 #if SYSTEM_SUPPORT_OS
@@ -155,8 +156,8 @@ void usart_scan(void)
 {
 	u8 t,len;
 	u8 USART3_TEMP[50];
-	u8 datatemp[30] = {0};
-	u16 temp = 0;
+	u8 datatemp[53] = {0};
+	u16 temp = 0,date_temp = 0;
 	float correct_temp = 0;
 	if(USART3_RX_STA&0x8000)//串口接收完成？
 	{					   
@@ -167,10 +168,10 @@ void usart_scan(void)
 			}
 			USART3_TEMP[len] = 0;
 			if(strncmp((char*)USART3_TEMP,"DATA",4) == 0){
-				datatemp[29] = (USART3_TEMP[4] - 0x30) * 29 + 1;
+				len = (USART3_TEMP[4] - 0x30) * 53 + 1;
 				AT24CXX_Init();
-				AT24CXX_Read(datatemp[29],datatemp,29);
-				for(t = 0; t < 29; t++)
+				AT24CXX_Read(len,datatemp,53);
+				for(t = 0; t < 53; t++)
 					if(READ_BLU)
 						printf("data %d = %d  \n",t,datatemp[t]);
 				IIC_Off();
@@ -187,6 +188,35 @@ void usart_scan(void)
 				tmr_active_correct = correct_temp - (float)temp;
 				Data_Store(tmr_active_count / 60);
 				tmr_active_count = 0;	
+			}
+			else if(strncmp((char*)USART3_TEMP,"TIME",4) == 0){
+				time_data[0] = (USART3_TEMP[4] - 0x30) * 10 + (USART3_TEMP[5] - 0x30);
+				time_data[2] = (USART3_TEMP[6] - 0x30) * 10 + (USART3_TEMP[7] - 0x30);
+				time_data[3] = (USART3_TEMP[8] - 0x30) * 10 + (USART3_TEMP[9] - 0x30);
+				time_data[4] = (USART3_TEMP[10] - 0x30) * 10 + (USART3_TEMP[11] - 0x30);
+				time_data[5] = (USART3_TEMP[12] - 0x30) * 10 + (USART3_TEMP[13] - 0x30);
+				time_data[6] = (USART3_TEMP[14] - 0x30) * 10 + (USART3_TEMP[15] - 0x30);
+				temp = time_data[0] * 559 + time_data[2] * 745 +time_data[3] * 24 +time_data[4] ;
+				DS1302_GPIO_Init();
+				Read_rtc();
+				time_pros();
+				DS1302_Off();
+				date_temp = disp[0] * 559 + disp[1] * 745 + disp[2] * 24 + disp[3];
+				if(temp != date_temp){
+					DS1302_GPIO_Init();
+					Set_rtc();
+					DS1302_Off();
+				}
+				DS1302_GPIO_Init();
+				Read_rtc();
+				time_pros();
+				DS1302_Off();
+				if(READ_BLU){
+					for(t = 0;t<6;t++)
+						printf("--%d--",disp[t]);
+					printf("\n");
+				}
+				memset(disp,0,6);
 			}
 			USART3_RX_STA=0;    
 	}

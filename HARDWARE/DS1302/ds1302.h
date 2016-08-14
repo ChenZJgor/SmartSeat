@@ -21,4 +21,5 @@ void DS1302_GPIO_Init(void);
 void DS1302_Off(void);
 
 extern u8 disp[6];
+extern u8 time_data[7];
 #endif
