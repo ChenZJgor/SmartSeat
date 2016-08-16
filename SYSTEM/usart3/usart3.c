@@ -62,6 +62,7 @@ void SendString(u8 *string)
 }
 extern u16 tmr_active_push;
 extern u16 tmr_active_count;
+extern u16 seattime;
 extern float tmr_active_correct;
 
 #if EN_USART3_RX   //如果使能了接收
@@ -168,10 +169,10 @@ void usart_scan(void)
 			}
 			USART3_TEMP[len] = 0;
 			if(strncmp((char*)USART3_TEMP,"DATA",4) == 0){
-				len = (USART3_TEMP[4] - 0x30) * 53 + 1;
+				len = (USART3_TEMP[4] - 0x30) * 29 + 1;
 				AT24CXX_Init();
-				AT24CXX_Read(len,datatemp,53);
-				for(t = 0; t < 53; t++)
+				AT24CXX_Read(len,datatemp,29);
+				for(t = 0; t < 29; t++)
 					if(READ_BLU)
 						printf("data %d = %d  \n",t,datatemp[t]);
 				IIC_Off();
@@ -187,7 +188,21 @@ void usart_scan(void)
 				temp = tmr_active_count / 60;
 				tmr_active_correct = correct_temp - (float)temp;
 				Data_Store(tmr_active_count / 60);
-				tmr_active_count = 0;	
+				tmr_active_count = 0;
+				
+				AT24CXX_Init();
+				for(t = 0; t < 8; t++){
+					AT24CXX_Read(1+t*29,datatemp,29);
+					if(READ_BLU)
+						printf("DATA%d=",t);
+					for(len = 0;len < 29; len++){
+						if(READ_BLU)
+							printf("%d,",datatemp[len]);
+					}
+					if(READ_BLU)
+						printf("\n");
+				}
+				IIC_Off();
 			}
 			else if(strncmp((char*)USART3_TEMP,"TIME",4) == 0){
 				time_data[0] = (USART3_TEMP[4] - 0x30) * 10 + (USART3_TEMP[5] - 0x30);
@@ -217,6 +232,15 @@ void usart_scan(void)
 					printf("\n");
 				}
 				memset(disp,0,6);
+			}
+			else if(strncmp((char*)USART3_TEMP,"SEATTIME",8) == 0){
+				len = (USART3_TEMP[8] - 0x30)*100 + (USART3_TEMP[9] - 0x30)*10 + (USART3_TEMP[10] - 0x30);
+				AT24CXX_Init();
+				AT24CXX_WriteOneByte(240,len);
+				IIC_Off();
+				seattime = len * 60;
+				if(READ_BLU)
+					printf("Time set\n");
 			}
 			USART3_RX_STA=0;    
 	}

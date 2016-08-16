@@ -41,14 +41,14 @@ CPU_STK START_TASK_STK[START_STK_SIZE];
 void start_task(void *p_arg);
 
 //任务优先级
-#define ADC_TASK_PRIO		4
+#define CORE_TASK_PRIO		4
 //任务堆栈大小	
-#define ADC_STK_SIZE 		128
+#define CORE_STK_SIZE 		128
 //任务控制块
-OS_TCB ADCTaskTCB;
+OS_TCB CORETaskTCB;
 //任务堆栈	
-CPU_STK ADC_TASK_STK[ADC_STK_SIZE];
-void adc_task(void *p_arg);
+CPU_STK CORE_TASK_STK[CORE_STK_SIZE];
+void core_task(void *p_arg);
 
 //任务优先级
 #define TIMEOUT_TASK_PRIO		5
@@ -116,7 +116,7 @@ void battery_task(void *p_arg);
 #define STRAIN_LEFT 400	//第一应变片开启电压
 #define STRAIN_RIGHT 200	//第二应变片开启电压
 
-#define ACTIVE_TIME 1800 //最长静坐时间，N*1s
+#define ACTIVE_TIME seattime //最长静坐时间，N*1s
 #define NEGETIVE_TIME 45 //休眠关机时间，N*1s
 #define TIMEOUT_TIME 30	//超时处理时，电机最长震动时间
 #define SPORT_TIME 15	//最少运动时间
@@ -132,6 +132,8 @@ void battery_task(void *p_arg);
 #define ON 1
 #define OFF 0 
 
+u16 seattime = 1800;	//最长静坐时间，N*1s
+
 u8 power_flag = 0;	//电源标志位
 u8 active_flag = 0;	//应变片激活标志位
 u8 negative_flag = 0;	//应变片休眠标志位
@@ -145,6 +147,8 @@ u8 adc_count_flag = 0;	//平衡采样完成标志位
 u8 lowpower_flag = 0;		//低电量标志位
 u8 led_green_flag = 0;	//绿色LED灯状态标志位
 u8 led_red_flag = 0;		//红色LED灯状态标志位
+u8 store_hour_flag = 0;	
+//u8 time_set_flag = 0;
 
 float tmr_active_correct = 0;
 
@@ -171,6 +175,11 @@ OS_TMR tmr_sport;	//运动定时器
 void tmr_sport_callback(void *p_tmr, void *p_arg);	//超时定时器回调函数
 u8 tmr_sport_count = 0;
 u8 tmr_sport_timeout = 0;
+
+OS_TMR tmr_store;	//储存定时器
+void tmr_store_callback(void *p_tmr, void *p_arg);	//超时定时器回调函数
+u16 tmr_store_count = 0;
+u8 tmr_store_timeout = 0;
 
 ////////////////////////////////////////////////////////
 OS_SEM ActiveSem;		//激活信号量
@@ -277,7 +286,17 @@ void start_task(void *p_arg)
                 (OS_OPT		 )OS_OPT_TMR_PERIODIC, //周期模式
                 (OS_TMR_CALLBACK_PTR)tmr_sport_callback,//休眠定时器回调函数
                 (void	    *)0,			//参数为0
-                (OS_ERR	    *)&err);		//返回的错误码																			
+                (OS_ERR	    *)&err);		//返回的错误码		
+
+		//创建储存定时器
+	OSTmrCreate((OS_TMR		*)&tmr_store,		//储存定时器
+                (CPU_CHAR	*)"tmr store",		//定时器名字
+                (OS_TICK	 )0,			//0
+                (OS_TICK	 )100,          //100*10=1000ms
+                (OS_OPT		 )OS_OPT_TMR_PERIODIC, //周期模式
+                (OS_TMR_CALLBACK_PTR)tmr_store_callback,//休眠定时器回调函数
+                (void	    *)0,			//参数为0
+                (OS_ERR	    *)&err);		//返回的错误码									
 				
 	OS_CRITICAL_ENTER();	//进入临界区
 								
@@ -291,15 +310,15 @@ void start_task(void *p_arg)
                    (OS_SEM_CTR)0,
                    (OS_ERR*)	&err);									
 								
-	//创建ADC检测任务
-	OSTaskCreate((OS_TCB 	* )&ADCTaskTCB,		
-				 (CPU_CHAR	* )"adc task", 		
-                 (OS_TASK_PTR )adc_task, 			
+	//创建系统核心任务
+	OSTaskCreate((OS_TCB 	* )&CORETaskTCB,		
+				 (CPU_CHAR	* )"core task", 		
+                 (OS_TASK_PTR )core_task, 			
                  (void		* )0,					
-                 (OS_PRIO	  )ADC_TASK_PRIO,     
-                 (CPU_STK   * )&ADC_TASK_STK[0],	
-                 (CPU_STK_SIZE)ADC_STK_SIZE/10,	
-                 (CPU_STK_SIZE)ADC_STK_SIZE,		
+                 (OS_PRIO	  )CORE_TASK_PRIO,     
+                 (CPU_STK   * )&CORE_TASK_STK[0],	
+                 (CPU_STK_SIZE)CORE_STK_SIZE/10,	
+                 (CPU_STK_SIZE)CORE_STK_SIZE,		
                  (OS_MSG_QTY  )0,					
                  (OS_TICK	  )0,					
                  (void   	* )0,					
@@ -398,7 +417,10 @@ void start_task(void *p_arg)
 				 			 
 	OS_TaskSuspend((OS_TCB*)&StartTaskTCB,&err);		//挂起开始任务			 
 	OS_CRITICAL_EXIT();	//进入临界区						 
-								 
+	
+	AT24CXX_Init();							 
+	seattime = (AT24CXX_ReadOneByte(240)) * 60;
+	IIC_Off();
 	ADC_Cmd(ADC1, DISABLE);			//关闭ADC1
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, DISABLE);			//关闭串口1通道时钟
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, DISABLE); 		//关闭串口3通道时钟
@@ -410,12 +432,14 @@ void start_task(void *p_arg)
 	Sys_Enter_Standby();
 }
 
-//adc任务函数
-void adc_task(void *p_arg)
+//核心任务函数
+void core_task(void *p_arg)
 {
 	static u16 adc_count = 0;	
 	u16 adc_left = 0,adc_right = 0, adc_diff = 0;
 	u8 adc_diff_level = 0;
+	u16 temp = 0;
+	float correct_temp = 0;
 //	u8 datatemp[100]={0};
 //	u8 i ;
 //	u8 bt05_flag = 0;
@@ -454,7 +478,7 @@ void adc_task(void *p_arg)
 //		i = AT24CXX_ReadOneByte(255);
 //		printf("data = %d  \n",i);
 		
-//		printf("adc running\n");
+//		printf("adc running\n");	
 		if(strain_on){			
 			//GPIOA.15	  关闭A.15外部中断
 			GPIO_EXTILineConfig(GPIO_PortSourceGPIOA,GPIO_PinSource15);
@@ -483,6 +507,25 @@ void adc_task(void *p_arg)
 					led_green_flag = OFF;
 				}
 			}
+			if(store_hour_flag == 0){
+				OSTmrStop (&tmr_store,OS_OPT_TMR_NONE,0,&err);
+				tmr_store_count = 0;
+				DS1302_GPIO_Init();
+				Read_rtc();
+				time_pros();
+				DS1302_Off();
+				if((disp[4] == 59) && (disp[5] == 59)){
+					tmr_active_push += tmr_active_count;
+					correct_temp = (float)tmr_active_count / 60.0;
+					temp = tmr_active_count / 60;
+					tmr_active_correct = correct_temp - (float)temp;
+					Data_Store(tmr_active_count / 60);
+					tmr_active_count = 0;
+					OSTmrStart(&tmr_store,&err);
+					store_hour_flag = 1;
+				}
+			}
+			
 			adc_left = Get_Adc_Average(ADC_Channel_1,10);
 			adc_right = Get_Adc_Average(ADC_Channel_2,10);
 //			printf("adc green = %d, adc blue = %d\n",adc_left,adc_right);
@@ -566,7 +609,7 @@ void timeout_task(void *p_arg)
 				//	tmr_active_push = 0;
 			//	}
 			//	tmr_active_push += tmr_active_count;
-				data_store = ((u16)(tmr_active_correct + 0.5)) + tmr_active_count / 60;
+				data_store = ((u16)(tmr_active_correct + 0.6)) + tmr_active_count / 60;
 				Data_Store(data_store);
 				tmr_active_push = 0;
 				tmr_active_count = 0;															//应变片激活计时器清零
@@ -678,11 +721,12 @@ void timeout_task(void *p_arg)
 		//	}
 			//tmr_active_push += tmr_active_count;
 			
-			data_store = ((u16)(tmr_active_correct + 0.5)) + tmr_active_count / 60;
+			data_store = ((u16)(tmr_active_correct + 0.6)) + tmr_active_count / 60;
 			Data_Store(data_store);
 			tmr_active_push = 0;
 			tmr_active_count = 0;															//应变片激活计时器清零
 			tmr_active_correct = 0;
+			store_hour_flag = 0;		//小时储存标志位清零
 			//IIC_Off();
 			strain_on = 0;
 			tmr_negative_timeout = 0;
@@ -977,5 +1021,16 @@ void tmr_sport_callback(void *p_tmr, void *p_arg)
 	if(tmr_sport_count >= SPORT_TIME){
 		tmr_sport_timeout = 1;
 		tmr_sport_count = 0;
+	}
+}
+
+void tmr_store_callback(void *p_tmr, void *p_arg)
+{
+	tmr_store_count++;
+	
+	if(tmr_store_count >= 3595){
+		tmr_store_timeout = 1;
+		tmr_store_count = 0;
+		store_hour_flag = 0;
 	}
 }
