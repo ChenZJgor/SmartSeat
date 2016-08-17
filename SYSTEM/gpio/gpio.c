@@ -12,12 +12,16 @@ void Gpio_Init(void)
 	
 	GPIO_InitStructure.GPIO_Pin  = GPIO_Pin_7 | GPIO_Pin_12;//PA7，PA12
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPD; //设置成下拉输入
- 	GPIO_Init(GPIOA, &GPIO_InitStructure);//初始化GPIOA15
+ 	GPIO_Init(GPIOA, &GPIO_InitStructure);//初始化GPIOA
 	
  
 	GPIO_InitStructure.GPIO_Pin  = GPIO_Pin_4 | GPIO_Pin_8 | GPIO_Pin_9 | GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15;//PB8,PB9,PB12,PB13,PB14,PB15
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPD; //PA0设置成上拉输入  
-	GPIO_Init(GPIOB, &GPIO_InitStructure);//初始化GPIOA.0
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPD; //PA0设置成下拉输入  
+	GPIO_Init(GPIOB, &GPIO_InitStructure);//初始化GPIOB
+	
+	GPIO_InitStructure.GPIO_Pin  = GPIO_Pin_13;//PC13
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING; //设置成下拉输入
+ 	GPIO_Init(GPIOC, &GPIO_InitStructure);//初始化GPIOC13
 	
 } 
 

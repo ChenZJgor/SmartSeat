@@ -26,7 +26,7 @@ void EXTIX_Init(void)
 
   	EXTI_InitStructure.EXTI_Line=EXTI_Line15;
   	EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;	
-  	EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
+  	EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;
   	EXTI_InitStructure.EXTI_LineCmd = ENABLE;
   	EXTI_Init(&EXTI_InitStructure);	  	//根据EXTI_InitStruct中指定的参数初始化外设EXTI寄存器
 
@@ -60,7 +60,7 @@ void EXTIX_Init(void)
 void EXTI0_IRQHandler(void)
 {
 	OSIntEnter(); 
-  delay_ms(50);    //消抖
+	//delay_ms(10);    //消抖
 	SystemInit(); 
 	//printf("WK_UP=A0\n");
 	uart_init(9600);    //串口波特率设置
@@ -74,9 +74,7 @@ void EXTI0_IRQHandler(void)
 void EXTI15_10_IRQHandler(void)
 {
 	OSIntEnter();
-//  delay_ms(50);    //消抖	
-	delay_ms(50);
-	
+//	delay_ms(10);	
 	SystemInit(); 
 	//printf("KEY1=A15\n");
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);

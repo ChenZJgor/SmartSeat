@@ -196,8 +196,11 @@ void usart_scan(void)
 					if(READ_BLU)
 						printf("DATA%d=",t);
 					for(len = 0;len < 29; len++){
-						if(READ_BLU)
+						if(READ_BLU){
 							printf("%d,",datatemp[len]);
+							//USART1->DR=datatemp[len];
+							//while((USART1->SR&0X40)==0);//µÈ´ý·¢ËÍ½áÊø
+						}
 					}
 					if(READ_BLU)
 						printf("\n");

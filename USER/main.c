@@ -16,6 +16,7 @@
 #include "stm32f10x_exti.h"
 #include "wkup.h"
 #include "gpio.h"
+#include "RTC_Alarm.h"
 
 
 //将这些优先级分配给了UCOSIII的5个系统内部任务
@@ -147,7 +148,8 @@ u8 adc_count_flag = 0;	//平衡采样完成标志位
 u8 lowpower_flag = 0;		//低电量标志位
 u8 led_green_flag = 0;	//绿色LED灯状态标志位
 u8 led_red_flag = 0;		//红色LED灯状态标志位
-u8 store_hour_flag = 0;	
+u8 store_hour_flag = 0;	//小时储存标志
+u8 system_init_flag = 0;	//系统初始化标志位
 //u8 time_set_flag = 0;
 
 float tmr_active_correct = 0;
@@ -417,19 +419,6 @@ void start_task(void *p_arg)
 				 			 
 	OS_TaskSuspend((OS_TCB*)&StartTaskTCB,&err);		//挂起开始任务			 
 	OS_CRITICAL_EXIT();	//进入临界区						 
-	
-	AT24CXX_Init();							 
-	seattime = (AT24CXX_ReadOneByte(240)) * 60;
-	IIC_Off();
-	ADC_Cmd(ADC1, DISABLE);			//关闭ADC1
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, DISABLE);			//关闭串口1通道时钟
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, DISABLE); 		//关闭串口3通道时钟
-	USART_Cmd(USART1, DISABLE);	//关闭串口1
-	USART_Cmd(USART3, DISABLE);	//关闭串口3
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1	, DISABLE );	  //关闭ADC1通道时钟
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, DISABLE);			//关闭GPIOA通道时钟
-	RCC_APB2PeriphClockCmd(	RCC_APB2Periph_GPIOB, DISABLE );		//关闭GPIOB通道时钟
-	Sys_Enter_Standby();
 }
 
 //核心任务函数
@@ -450,6 +439,8 @@ void core_task(void *p_arg)
 	
 	while(1)
 	{
+//调试代码
+//////////////////////////////////////////////		
 /*		
 		if(bt05_flag == 0){
 			memset(USART3_TX_BUF,0,200);
@@ -478,8 +469,31 @@ void core_task(void *p_arg)
 //		i = AT24CXX_ReadOneByte(255);
 //		printf("data = %d  \n",i);
 		
-//		printf("adc running\n");	
-		if(strain_on){			
+//		printf("adc running\n");
+//////////////////////////////////////////////
+		if(system_init_flag == 0){
+			if((Get_Adc_Average(ADC_Channel_3,10)) < 869){
+				RTC_Alarm_Configuration();
+				Sys_Enter_Shutdown();
+			}
+			RTC_Off();
+			AT24CXX_Init();							 
+			seattime = (AT24CXX_ReadOneByte(240)) * 60;									//读取坐下提醒时间
+			IIC_Off();
+											 
+			ADC_Cmd(ADC1, DISABLE);			//关闭ADC1
+			RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, DISABLE);			//关闭串口1通道时钟
+			RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, DISABLE); 		//关闭串口3通道时钟
+			USART_Cmd(USART1, DISABLE);	//关闭串口1
+			USART_Cmd(USART3, DISABLE);	//关闭串口3
+			RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1	, DISABLE );	  //关闭ADC1通道时钟
+			RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, DISABLE);			//关闭GPIOA通道时钟
+			RCC_APB2PeriphClockCmd(	RCC_APB2Periph_GPIOB, DISABLE );		//关闭GPIOB通道时钟
+			system_init_flag = 1;
+			Sys_Enter_Standby();
+		}
+
+		if(strain_on){
 			//GPIOA.15	  关闭A.15外部中断
 			GPIO_EXTILineConfig(GPIO_PortSourceGPIOA,GPIO_PinSource15);
 
@@ -507,7 +521,7 @@ void core_task(void *p_arg)
 					led_green_flag = OFF;
 				}
 			}
-			if(store_hour_flag == 0){
+			if(store_hour_flag == 0){							//检测系统时间，每小时记录一次数据
 				OSTmrStop (&tmr_store,OS_OPT_TMR_NONE,0,&err);
 				tmr_store_count = 0;
 				DS1302_GPIO_Init();
@@ -598,25 +612,13 @@ void timeout_task(void *p_arg)
 				tmr_negative_timeout = 0;													//休眠超时标记清零
 				OSTmrStart(&tmr_timeout,&err);										//开启超时计时器
 				OSTmrStop (&tmr_active,OS_OPT_TMR_NONE,0,&err);		//关闭应变片激活计时器
-				//AT24CXX_Init();
-				//DS1302_GPIO_Init();
-				//Read_rtc();
-				//time_pros();
-				//DS1302_Off();
-				//date_temp = disp[0] * 608 + disp[1] * 808 + disp[2]*26 + disp[3];	
-				//if(date_temp > date_mark){
-				//	date_mark = date_temp;
-				//	tmr_active_push = 0;
-			//	}
-			//	tmr_active_push += tmr_active_count;
+				
 				data_store = ((u16)(tmr_active_correct + 0.6)) + tmr_active_count / 60;
 				Data_Store(data_store);
 				tmr_active_push = 0;
 				tmr_active_count = 0;															//应变片激活计时器清零
-				tmr_active_correct = 0;
-				//IIC_Off();														
-
-				
+				tmr_active_correct = 0;														//时间校准变量清零
+																		
 				timeout_flag = 1;																	//超时计时标志置1
 			}
 			if(negative_flag){																	//当人离开坐垫
@@ -626,7 +628,7 @@ void timeout_task(void *p_arg)
 //					printf("motor off\n");
 				}
 				if(bee_flag){
-					Bee_Contrl(BEE_NEGATIVE);																					//关闭蜂鸣器
+					Bee_Contrl(BEE_NEGATIVE);												//关闭蜂鸣器
 					bee_flag = OFF;
 //					printf("bee off\n");
 				}
@@ -642,7 +644,7 @@ void timeout_task(void *p_arg)
 
 //					printf("motor going again\n");
 				}
-				if(bee_flag == OFF){
+				if(bee_flag == OFF){															//启动蜂鸣器
 					bee_flag = ON;
 				}
 				if(bee_flag){
@@ -672,7 +674,7 @@ void timeout_task(void *p_arg)
 				OSTmrStop (&tmr_timeout,OS_OPT_TMR_NONE,0,&err);	//关闭超时计时器
 				tmr_timeout_count = 0;														//超时计时器计数清零
 				tmr_timeout_timeout = 0;													//超时计时器计数超时标志清零
-				timeout_flag = 0;																	//超时计时标志清零
+				timeout_flag = 0;																	//超时任务执行标志
 				OSTmrStop (&tmr_sport,OS_OPT_TMR_NONE,0,&err);		//关闭运动计时器
 				sport_flag = 0;																		//运动计时标志清零
 				tmr_sport_count = 0;															//运动计时器计数清零
@@ -681,7 +683,7 @@ void timeout_task(void *p_arg)
 				active_flag = 0;																	//应变片激活标志位清零
 				tmr_active_timeout = 0;														//应变片激活计时器计数超时标志位清零
 			}
-			if(tmr_timeout_timeout){
+			if(tmr_timeout_timeout){														//超过一定时间未运动，关闭提醒
 //				printf("more than 10 mins, turn off motor\n");
 				Motor_Contrl(MOTOR_NEGATIVE);
 				motor_flag = OFF;
@@ -709,25 +711,14 @@ void timeout_task(void *p_arg)
 			bee_flag = OFF;
 			OSTmrStop (&tmr_active,OS_OPT_TMR_NONE,0,&err);
 			OSTmrStop (&tmr_negative,OS_OPT_TMR_NONE,0,&err);
-			//AT24CXX_Init();
-			//DS1302_GPIO_Init();
-			//Read_rtc();
-			//time_pros();
-			//DS1302_Off();
-			//date_temp = disp[0] * 608 + disp[1] * 808 + disp[2]*26 + disp[3];	
-			//if(date_temp > date_mark){
-			//	date_mark = date_temp;
-			//	tmr_active_push = 0;
-		//	}
-			//tmr_active_push += tmr_active_count;
 			
 			data_store = ((u16)(tmr_active_correct + 0.6)) + tmr_active_count / 60;
 			Data_Store(data_store);
 			tmr_active_push = 0;
 			tmr_active_count = 0;															//应变片激活计时器清零
 			tmr_active_correct = 0;
-			store_hour_flag = 0;		//小时储存标志位清零
-			//IIC_Off();
+			store_hour_flag = 0;															//小时储存标志位清零
+
 			strain_on = 0;
 			tmr_negative_timeout = 0;
 			tmr_negative_count = 0;
@@ -883,19 +874,7 @@ void bluetooth_task(void *p_arg)
 	p_arg = p_arg;
 	
 	while(1){
-/*		if(data_push_flag == 1){
-			DS1302_GPIO_Init();
-			Read_rtc();
-			time_pros();
-			DS1302_Off();
-			date_temp = disp[0] * 608 + disp[1] * 808 + disp[2]*26 + disp[3];	
-			if(date_temp > date_mark){
-				date_mark = date_temp;
-				tmr_active_push = 0;
-				data_push_flag = 0;
-			}			
-		}*/
-		if(bluetooth_on || READ_BLU){
+		if(bluetooth_on){
 			if(strain_on){
 				if(READ_BLU){
 					usart_scan();
@@ -936,35 +915,53 @@ void bluetooth_task(void *p_arg)
 //电池电量检测任务
 void battery_task(void *p_arg)
 {
-	u16 battery;
+	u16 battery = 0,data_store = 0;
 	OS_ERR err;
 	p_arg = p_arg;
 	
 	while(1){
 		battery = Get_Adc_Average(ADC_Channel_3,10);
-		if(battery < 865){
-			LED1_OFF();
-			led_red_flag = OFF;
-			LED0_OFF();
-			led_green_flag = OFF;
+		if(battery < 869){
 			Motor_Contrl(MOTOR_NEGATIVE);											//关闭电机
 			motor_flag = OFF;
 			Bee_Contrl(BEE_NEGATIVE);													//关闭蜂鸣器
 			bee_flag = OFF;
+			OSTmrStop (&tmr_active,OS_OPT_TMR_NONE,0,&err);
+			OSTmrStop (&tmr_negative,OS_OPT_TMR_NONE,0,&err);
+			
+			data_store = ((u16)(tmr_active_correct + 0.6)) + tmr_active_count / 60;
+			Data_Store(data_store);
+			tmr_active_push = 0;
+			tmr_active_count = 0;															//应变片激活计时器清零
+			tmr_active_correct = 0;
+			store_hour_flag = 0;															//小时储存标志位清零
+
+			strain_on = 0;
+			tmr_negative_timeout = 0;
+			tmr_negative_count = 0;
+			LED0_OFF();
+			led_green_flag = OFF;
+			LED1_OFF();
+			led_red_flag = OFF;
 			Power_Contrl(POWER_NEGATIVE);					//关闭应变片电源
 			power_flag = OFF;
+			negative_flag = 0;
 			
-			ADC_Cmd(ADC1, DISABLE);			//关闭ADC1
-			RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, DISABLE);			//关闭串口1通道时钟
-			RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, DISABLE); 		//关闭串口3通道时钟
-			USART_Cmd(USART1, DISABLE);	//关闭串口1
-			USART_Cmd(USART3, DISABLE);	//关闭串口3
+			ADC_Cmd(ADC1, DISABLE);								//关闭ADC
+			USART_Cmd(USART1, DISABLE);						//关闭串口1
+			USART_Cmd(USART3, DISABLE);						//关闭串口3
 			RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC1	, DISABLE );	  //关闭ADC1通道时钟
+			RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, DISABLE);			//关闭串口1通道时钟
+			RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, DISABLE); 		//关闭串口3通道时钟								
 			RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, DISABLE);			//关闭GPIOA通道时钟
-			RCC_APB2PeriphClockCmd(	RCC_APB2Periph_GPIOB, DISABLE );		//关闭GPIOB通道时钟
-			Sys_Enter_Standby();
+			RCC_APB2PeriphClockCmd(	RCC_APB2Periph_GPIOB, DISABLE );		//关闭GPIOB通道时钟	
+			
+			//GPIOA.15	  开启A.15中断
+			EXTIX_Init();												//开启中断
+			RTC_Alarm_Configuration();					//开启RTC闹钟
+			Sys_Enter_Shutdown();								//进入待机模式
 		}
-		if(battery < 878){
+		if(battery < 880){
 			lowpower_flag = 1;
 			if(led_red_flag == OFF){
 				LED1_ON();
@@ -1027,7 +1024,6 @@ void tmr_sport_callback(void *p_tmr, void *p_arg)
 void tmr_store_callback(void *p_tmr, void *p_arg)
 {
 	tmr_store_count++;
-	
 	if(tmr_store_count >= 3595){
 		tmr_store_timeout = 1;
 		tmr_store_count = 0;
