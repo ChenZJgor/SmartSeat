@@ -237,11 +237,11 @@ void usart_scan(void)
 				memset(disp,0,6);
 			}
 			else if(strncmp((char*)USART3_TEMP,"SEATTIME",8) == 0){
-				len = (USART3_TEMP[8] - 0x30)*100 + (USART3_TEMP[9] - 0x30)*10 + (USART3_TEMP[10] - 0x30);
+				temp = (USART3_TEMP[8] - 0x30)*100 + (USART3_TEMP[9] - 0x30)*10 + (USART3_TEMP[10] - 0x30);
 				AT24CXX_Init();
-				AT24CXX_WriteOneByte(240,len);
+				AT24CXX_WriteLenByte(239,temp,2);
 				IIC_Off();
-				seattime = len * 60;
+				seattime = temp * 60;
 				if(READ_BLU)
 					printf("Time set\n");
 			}

@@ -245,6 +245,7 @@ void Posture_Store(u8 posture)
 			
 			posture &= 0xc0;
 			i = AT24CXX_ReadOneByte(writeaddr+houraddr);
+			i &= ~0xc0;
 			store_stack[houraddr] = i | posture;
 			//store_stack[houraddr] = data;
 			AT24CXX_Write(writeaddr,store_stack,29);
@@ -262,6 +263,7 @@ void Posture_Store(u8 posture)
 			houraddr = 5 + disp[3];
 			posture &= 0xc0;
 			i = AT24CXX_ReadOneByte(writeaddr+houraddr);
+			i &= ~0xc0;
 			store_stack[houraddr] = i | posture;
 			AT24CXX_WriteOneByte(writeaddr+houraddr,store_stack[houraddr]);
 		}
@@ -284,6 +286,7 @@ void Posture_Store(u8 posture)
 			
 		posture &= 0xc0;
 		i = AT24CXX_ReadOneByte(writeaddr+houraddr);
+		i &= ~0xc0;
 		store_stack[houraddr] = i | posture;
 		AT24CXX_Write(writeaddr,store_stack,29);
 	}

@@ -122,8 +122,6 @@ void battery_task(void *p_arg);
 #define TIMEOUT_TIME 30	//超时处理时，电机最长震动时间
 #define SPORT_TIME 15	//最少运动时间
 
-#define B_SAMPLES 10	//平衡检测采样数
-
 #define EXCELLENT 0
 #define GOOD 1
 #define OK 2
@@ -141,20 +139,24 @@ u8 negative_flag = 0;	//应变片休眠标志位
 u8 timeout_flag = 0;	//静坐时间超时标志位
 u8 sport_flag = 0;	//运动计时器标志位
 u8 strain_on = 0;	//压电传感器标志位
-u8 bluetooth_on = 0;	//蓝牙连接标志位
+u8 bluetooth_on = 1;	//蓝牙连接标志位 
 u8 motor_flag = 0;	//振动电机状态标志位
 u8 bee_flag = 0;	//蜂鸣器状态标志位
-u8 adc_count_flag = 0;	//平衡采样完成标志位
+//u8 adc_count_flag = 0;	//平衡采样完成标志位
 u8 lowpower_flag = 0;		//低电量标志位
 u8 led_green_flag = 0;	//绿色LED灯状态标志位
 u8 led_red_flag = 0;		//红色LED灯状态标志位
 u8 store_hour_flag = 0;	//小时储存标志
 u8 system_init_flag = 0;	//系统初始化标志位
+u8 balance_hour_flag = 0;
 //u8 time_set_flag = 0;
 
 float tmr_active_correct = 0;
 
-u8 balance_level[5] = {0};	
+u16 balance = 0;
+u16 balance_level = 0;
+u8 posture_store = 0;
+//u8 balance_level[5] = {0};	
 
 ////////////////////////////////////////////////////////
 OS_TMR 	tmr_active;		//激活定时器
@@ -424,10 +426,10 @@ void start_task(void *p_arg)
 //核心任务函数
 void core_task(void *p_arg)
 {
-	static u16 adc_count = 0;	
+//	static u16 adc_count = 0;	
 	u16 adc_left = 0,adc_right = 0, adc_diff = 0;
-	u8 adc_diff_level = 0;
-	u16 temp = 0;
+//	u8 adc_diff_level = 0;
+	u16 temp = 0,temp_date = 0;
 	float correct_temp = 0;
 //	u8 datatemp[100]={0};
 //	u8 i ;
@@ -470,15 +472,18 @@ void core_task(void *p_arg)
 //		printf("data = %d  \n",i);
 		
 //		printf("adc running\n");
+		usart_scan();
+		printf("running\n");
 //////////////////////////////////////////////
-		if(system_init_flag == 0){
+		if(system_init_flag == 1){
 			if((Get_Adc_Average(ADC_Channel_3,10)) < 869){
 				RTC_Alarm_Configuration();
 				Sys_Enter_Shutdown();
 			}
+//			PWR_WakeUpPinCmd(DISABLE);
 			RTC_Off();
 			AT24CXX_Init();							 
-			seattime = (AT24CXX_ReadOneByte(240)) * 60;									//读取坐下提醒时间
+			seattime = (AT24CXX_ReadLenByte(239,2)) * 60;									//读取坐下提醒时间
 			IIC_Off();
 											 
 			ADC_Cmd(ADC1, DISABLE);			//关闭ADC1
@@ -529,6 +534,18 @@ void core_task(void *p_arg)
 				time_pros();
 				DS1302_Off();
 				if((disp[4] == 59) && (disp[5] == 59)){
+					Posture_Store(posture_store);
+					DS1302_GPIO_Init();
+					Read_rtc();
+					time_pros();
+					DS1302_Off();
+					temp = disp[0] * 559 + disp[1] * 745 + disp[2] * 24 + disp[3];
+					AT24CXX_Init();	
+					AT24CXX_WriteLenByte(241,temp,2);
+					AT24CXX_WriteLenByte(243,balance,2);
+					IIC_Off();
+					balance_hour_flag = 0;			
+					
 					tmr_active_push += tmr_active_count;
 					correct_temp = (float)tmr_active_count / 60.0;
 					temp = tmr_active_count / 60;
@@ -543,17 +560,39 @@ void core_task(void *p_arg)
 			adc_left = Get_Adc_Average(ADC_Channel_1,10);
 			adc_right = Get_Adc_Average(ADC_Channel_2,10);
 //			printf("adc green = %d, adc blue = %d\n",adc_left,adc_right);
-			adc_diff = adc_left - adc_right;	//获取两组应变片之间的输出电压差
+			if(adc_left - adc_right > 0)
+				adc_diff = adc_left - adc_right;	//获取两组应变片之间的输出电压差
+			else if(adc_left - adc_right < 0)
+				adc_diff = adc_right - adc_left;
+			else
+				adc_diff = 0;
+			if(balance_hour_flag == 0){
+				DS1302_GPIO_Init();
+				Read_rtc();
+				time_pros();
+				DS1302_Off();
+				temp = AT24CXX_ReadLenByte(241, 2);
+				temp_date = disp[0] * 559 + disp[1] * 745 + disp[2] * 24 + disp[3];
+				if(temp == temp_date){
+					balance = AT24CXX_ReadLenByte(243, 2);
+				}
+				else{
+					balance = adc_diff;
+				}
+				balance_hour_flag = 1;
+			}				
+			balance = (balance + adc_diff) / 2;
+			
 			if(adc_left >= STRAIN_LEFT || adc_right >= STRAIN_RIGHT){
 				OSSemPost (&ActiveSem, OS_OPT_POST_1, &err);	//发送激活信号量
-				
-				if(adc_count_flag == 0){											//平衡数值统计
-//					printf("adc diff = %d\n",adc_diff);
-					if(adc_diff >= 376){
-						adc_diff_level = adc_diff - 376;
-//						if(READ_BLU)
-//							printf("diff level more than 500 = %d\n\r",adc_diff_level);
-						if(adc_diff_level <=15)
+				if(READ_BLU)
+					printf("adc diff = %d\n",adc_diff);
+			if(balance >= 370){
+				//		adc_diff_level = adc_diff - 376;
+				balance_level = balance - 370;
+						if(READ_BLU)
+							printf("diff level more than 500 = %d\n\r",balance_level);
+/*						if(adc_diff_level <= 15)
 							balance_level[0]++;
 						else if(adc_diff_level >15 && adc_diff_level <= 24)
 							balance_level[1]++;
@@ -562,13 +601,14 @@ void core_task(void *p_arg)
 						else if(adc_diff_level >36 && adc_diff_level <= 150)
 							balance_level[3]++;
 						else if(adc_diff_level >150)
-							balance_level[4]++;
-					}
-					else if(adc_diff < 376){
-						adc_diff_level = 376 - adc_diff;
+							balance_level[4]++;*/
+			}
+			else if(balance < 370){
+						//adc_diff_level = 376 - adc_diff;
+				balance_level = 370 - balance;
 //						if(READ_BLU)
 //							printf("diff level less than 500 = %d\n\r",adc_diff_level);
-						if(adc_diff_level <=15)
+/*						if(adc_diff_level <=15)
 							balance_level[0]++;
 						else if(adc_diff_level >15 && adc_diff_level <= 24)
 							balance_level[1]++;
@@ -577,19 +617,14 @@ void core_task(void *p_arg)
 						else if(adc_diff_level >36 && adc_diff_level <= 150)
 							balance_level[3]++;
 						else if(adc_diff_level >150)
-							balance_level[4]++;
+							balance_level[4]++;*/
 					}
-					adc_count++;
-				}
+	//				adc_count++;
 			}
 			else if(adc_left < STRAIN_LEFT && adc_right < STRAIN_RIGHT){
 				OSSemPost (&NegativeSem, OS_OPT_POST_1, &err);		//发送休眠信号量
 			}
 			
-			if(adc_count >= B_SAMPLES){													//平衡统计结束												
-				adc_count = 0;
-				adc_count_flag = 1;
-			}
 		}
 		OSTimeDlyHMSM (0,0,1,0,OS_OPT_TIME_PERIODIC,&err);
 	}
@@ -606,6 +641,8 @@ void timeout_task(void *p_arg)
 			if(timeout_flag == 0){
 				Motor_Contrl(MOTOR_ACTIVE);												//开启电机
 				Bee_Contrl(BEE_ACTIVE);														//开启蜂鸣器
+				delay_ms(10);
+				Bee_Contrl(BEE_NEGATIVE);
 				motor_flag = ON;																	//电机标记为开启状态	
 				bee_flag = ON;																		//蜂鸣器标记为开启状态
 				tmr_negative_count = 0;														//休眠计数清零
@@ -618,7 +655,19 @@ void timeout_task(void *p_arg)
 				tmr_active_push = 0;
 				tmr_active_count = 0;															//应变片激活计时器清零
 				tmr_active_correct = 0;														//时间校准变量清零
-																		
+
+				Posture_Store(posture_store);
+				DS1302_GPIO_Init();
+				Read_rtc();
+				time_pros();
+				DS1302_Off();
+				data_store = disp[0] * 559 + disp[1] * 745 + disp[2] * 24 + disp[3];
+				AT24CXX_Init();	
+				AT24CXX_WriteLenByte(241,data_store,2);
+				AT24CXX_WriteLenByte(243,balance,2);
+				IIC_Off();
+				balance_hour_flag = 0;		
+				
 				timeout_flag = 1;																	//超时计时标志置1
 			}
 			if(negative_flag){																	//当人离开坐垫
@@ -718,6 +767,18 @@ void timeout_task(void *p_arg)
 			tmr_active_count = 0;															//应变片激活计时器清零
 			tmr_active_correct = 0;
 			store_hour_flag = 0;															//小时储存标志位清零
+			
+			Posture_Store(posture_store);
+			DS1302_GPIO_Init();
+			Read_rtc();
+			time_pros();
+			DS1302_Off();
+			data_store = disp[0] * 559 + disp[1] * 745 + disp[2] * 24 + disp[3];
+			AT24CXX_Init();	
+			AT24CXX_WriteLenByte(241,data_store,2);
+			AT24CXX_WriteLenByte(243,balance,2);
+			IIC_Off();
+			balance_hour_flag = 0;	
 
 			strain_on = 0;
 			tmr_negative_timeout = 0;
@@ -792,10 +853,43 @@ void negative_task(void *p_arg)
 void balance_task(void *p_arg)
 {	
 	OS_ERR err;
-	u8 max,i,balance_name=0;
+//	u8 max,i,balance_name=0;
 	p_arg = p_arg;
 	
 	while(1){
+		if(balance_level <= 40){
+			posture_store &= 0x00;
+			posture_store |= 0x00;
+			//printf("The balance is excellent\n");
+			if(active_flag && tmr_active_timeout == 0){
+				Bee_Contrl(BEE_NEGATIVE);	
+			}
+		}
+		else if(balance_level >40 && balance_level <= 100){
+			posture_store &=  0x00;
+			posture_store |= 0x40;
+			if(active_flag && tmr_active_timeout == 0){
+				Bee_Contrl(BEE_ACTIVE);
+				delay_ms(5);
+				Bee_Contrl(BEE_NEGATIVE);
+			}
+		}	
+		else if(balance_level >100){
+			posture_store &= 0x00;
+			posture_store |= 0x80;
+			if(active_flag && tmr_active_timeout == 0){
+				Bee_Contrl(BEE_ACTIVE);
+				delay_ms(5);
+				Bee_Contrl(BEE_NEGATIVE);
+				delay_ms(50);
+				Bee_Contrl(BEE_ACTIVE);
+				delay_ms(5);
+				Bee_Contrl(BEE_NEGATIVE);
+			}
+		}
+	
+		
+/*	
 		if(adc_count_flag){
 //			printf("balance task is running\n");						
 			max = balance_level[0];
@@ -861,7 +955,7 @@ void balance_task(void *p_arg)
 			}
 			memset(balance_level,0,5);
 			adc_count_flag = 0;
-		}
+		}*/
 		OSTimeDlyHMSM (0,0,1,0,OS_OPT_TIME_PERIODIC,&err);
 	}
 }
@@ -874,6 +968,7 @@ void bluetooth_task(void *p_arg)
 	p_arg = p_arg;
 	
 	while(1){
+		
 		if(bluetooth_on){
 			if(strain_on){
 				if(READ_BLU){
@@ -935,6 +1030,18 @@ void battery_task(void *p_arg)
 			tmr_active_count = 0;															//应变片激活计时器清零
 			tmr_active_correct = 0;
 			store_hour_flag = 0;															//小时储存标志位清零
+			
+			Posture_Store(posture_store);
+			DS1302_GPIO_Init();
+			Read_rtc();
+			time_pros();
+			DS1302_Off();
+			data_store = disp[0] * 559 + disp[1] * 745 + disp[2] * 24 + disp[3];
+			AT24CXX_Init();	
+			AT24CXX_WriteLenByte(241,data_store,2);
+			AT24CXX_WriteLenByte(243,balance,2);
+			IIC_Off();
+			balance_hour_flag = 0;	
 
 			strain_on = 0;
 			tmr_negative_timeout = 0;
