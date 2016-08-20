@@ -139,10 +139,9 @@ u8 negative_flag = 0;	//应变片休眠标志位
 u8 timeout_flag = 0;	//静坐时间超时标志位
 u8 sport_flag = 0;	//运动计时器标志位
 u8 strain_on = 0;	//压电传感器标志位
-u8 bluetooth_on = 1;	//蓝牙连接标志位 
+u8 bluetooth_on = 0;	//蓝牙连接标志位 
 u8 motor_flag = 0;	//振动电机状态标志位
 u8 bee_flag = 0;	//蜂鸣器状态标志位
-//u8 adc_count_flag = 0;	//平衡采样完成标志位
 u8 lowpower_flag = 0;		//低电量标志位
 u8 led_green_flag = 0;	//绿色LED灯状态标志位
 u8 led_red_flag = 0;		//红色LED灯状态标志位
@@ -420,15 +419,14 @@ void start_task(void *p_arg)
                  (OS_ERR 	* )&err);										 
 				 			 
 	OS_TaskSuspend((OS_TCB*)&StartTaskTCB,&err);		//挂起开始任务			 
-	OS_CRITICAL_EXIT();	//进入临界区						 
+	OS_CRITICAL_EXIT();	//进入临界区								 
 }
 
 //核心任务函数
 void core_task(void *p_arg)
 {
-//	static u16 adc_count = 0;	
+
 	u16 adc_left = 0,adc_right = 0, adc_diff = 0;
-//	u8 adc_diff_level = 0;
 	u16 temp = 0,temp_date = 0;
 	float correct_temp = 0;
 //	u8 datatemp[100]={0};
@@ -436,7 +434,6 @@ void core_task(void *p_arg)
 //	u8 bt05_flag = 0;
 	
 	OS_ERR err;
-	EXTI_InitTypeDef EXTI_InitStructure;
 	p_arg = p_arg;
 	
 	while(1)
@@ -472,15 +469,27 @@ void core_task(void *p_arg)
 //		printf("data = %d  \n",i);
 		
 //		printf("adc running\n");
-		usart_scan();
-		printf("running\n");
 //////////////////////////////////////////////
-		if(system_init_flag == 1){
-			if((Get_Adc_Average(ADC_Channel_3,10)) < 869){
+		if(system_init_flag == 0){
+			if((Get_Adc_Average(ADC_Channel_3,10)) < 869){				
+				LED1_ON();
+				LED1 = ON;							 
+				delay_ms(100);
+				LED1_OFF();
+				delay_ms(100);							 
+				LED1_ON();
+				LED1 = ON;
+				delay_ms(100);							 
+				LED1_OFF();	
+				delay_ms(100);								 
+				LED1_ON();
+				LED1 = ON;
+				delay_ms(100);								 
+				LED1_OFF();
+				
 				RTC_Alarm_Configuration();
 				Sys_Enter_Shutdown();
 			}
-//			PWR_WakeUpPinCmd(DISABLE);
 			RTC_Off();
 			AT24CXX_Init();							 
 			seattime = (AT24CXX_ReadLenByte(239,2)) * 60;									//读取坐下提醒时间
@@ -499,14 +508,7 @@ void core_task(void *p_arg)
 		}
 
 		if(strain_on){
-			//GPIOA.15	  关闭A.15外部中断
-			GPIO_EXTILineConfig(GPIO_PortSourceGPIOA,GPIO_PinSource15);
-
-			EXTI_InitStructure.EXTI_Line=EXTI_Line15;
-			EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;	
-			EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
-			EXTI_InitStructure.EXTI_LineCmd = DISABLE;
-			EXTI_Init(&EXTI_InitStructure);	  	//根据EXTI_InitStruct中指定的参数初始化外设EXTI寄存器
+			EXTA15_Off();	//GPIOA.15	  关闭A.15外部中断			
 			
 			Adc_Init();	//开启ADC1
 			
@@ -585,41 +587,18 @@ void core_task(void *p_arg)
 			
 			if(adc_left >= STRAIN_LEFT || adc_right >= STRAIN_RIGHT){
 				OSSemPost (&ActiveSem, OS_OPT_POST_1, &err);	//发送激活信号量
-				if(READ_BLU)
-					printf("adc diff = %d\n",adc_diff);
-			if(balance >= 370){
-				//		adc_diff_level = adc_diff - 376;
-				balance_level = balance - 370;
-						if(READ_BLU)
-							printf("diff level more than 500 = %d\n\r",balance_level);
-/*						if(adc_diff_level <= 15)
-							balance_level[0]++;
-						else if(adc_diff_level >15 && adc_diff_level <= 24)
-							balance_level[1]++;
-						else if(adc_diff_level >24 && adc_diff_level <= 36)
-							balance_level[2]++;
-						else if(adc_diff_level >36 && adc_diff_level <= 150)
-							balance_level[3]++;
-						else if(adc_diff_level >150)
-							balance_level[4]++;*/
-			}
-			else if(balance < 370){
-						//adc_diff_level = 376 - adc_diff;
-				balance_level = 370 - balance;
-//						if(READ_BLU)
-//							printf("diff level less than 500 = %d\n\r",adc_diff_level);
-/*						if(adc_diff_level <=15)
-							balance_level[0]++;
-						else if(adc_diff_level >15 && adc_diff_level <= 24)
-							balance_level[1]++;
-						else if(adc_diff_level >24 && adc_diff_level <= 36)
-							balance_level[2]++;
-						else if(adc_diff_level >36 && adc_diff_level <= 150)
-							balance_level[3]++;
-						else if(adc_diff_level >150)
-							balance_level[4]++;*/
-					}
-	//				adc_count++;
+//				if(READ_BLU)
+//					printf("adc diff = %d\n",adc_diff);
+				if(balance >= 370){
+					balance_level = balance - 370;
+//				if(READ_BLU)
+//					printf("diff level more than 500 = %d\n\r",balance_level);
+				}
+				else if(balance < 370){
+					balance_level = 370 - balance;
+//				if(READ_BLU)
+//					printf("diff level less than 500 = %d\n\r",adc_diff_level);
+				}
 			}
 			else if(adc_left < STRAIN_LEFT && adc_right < STRAIN_RIGHT){
 				OSSemPost (&NegativeSem, OS_OPT_POST_1, &err);		//发送休眠信号量
@@ -887,83 +866,13 @@ void balance_task(void *p_arg)
 				Bee_Contrl(BEE_NEGATIVE);
 			}
 		}
-	
-		
-/*	
-		if(adc_count_flag){
-//			printf("balance task is running\n");						
-			max = balance_level[0];
-			for(i=1; i<5; i++){
-				if(balance_level[i] > max)
-					max = balance_level[i];
-			}
-			for(i=0; i<5; i++){
-				if(max == balance_level[i])
-					balance_name = i;
-			}
-			if(balance_name == EXCELLENT){
-				if(balance_level[EXCELLENT] >= B_SAMPLES/2){
-//					printf("The balance is excellent\n");
-						Bee_Contrl(BEE_NEGATIVE);					
-				}
-				else{
-//					printf("THE balance is good\n");
-						Bee_Contrl(BEE_NEGATIVE);	
-				}
-			}
-			else if(balance_name == GOOD){
-				if(balance_level[GOOD] >= B_SAMPLES/2){
-//					printf("The balance is good\n");
-						Bee_Contrl(BEE_NEGATIVE);					
-				}
-				else{
-//					printf("THE balance is OK\n");
-						Bee_Contrl(BEE_NEGATIVE);					
-				}
-			}
-			else if(balance_name == OK){
-				if(balance_level[OK] >= B_SAMPLES/2){
-//					printf("The balance is OK\n");
-						Bee_Contrl(BEE_NEGATIVE);						
-				}
-				else{
-//					printf("THE balance is bad\n");
-						Bee_Contrl(BEE_ACTIVE);
-						delay_ms(10);
-						Bee_Contrl(BEE_NEGATIVE);
-				}
-			}
-			else if(balance_name == BAD){
-				if(balance_level[BAD] >= B_SAMPLES/2){
-//					printf("The balance is bad\n");
-						Bee_Contrl(BEE_ACTIVE);
-						delay_ms(10);
-						Bee_Contrl(BEE_NEGATIVE);						
-				}
-				else{
-//					printf("THE balance is serious\n");
-						Bee_Contrl(BEE_ACTIVE);
-						delay_ms(10);
-						Bee_Contrl(BEE_NEGATIVE);					
-				}
-			}
-			else if(balance_name == SERIOUS){
-//				printf("THE balance is serious\n");
-					Bee_Contrl(BEE_ACTIVE);
-					delay_ms(10);
-					Bee_Contrl(BEE_NEGATIVE);				
-			}
-			memset(balance_level,0,5);
-			adc_count_flag = 0;
-		}*/
-		OSTimeDlyHMSM (0,0,1,0,OS_OPT_TIME_PERIODIC,&err);
+		OSTimeDlyHMSM (0,0,5,0,OS_OPT_TIME_PERIODIC,&err);
 	}
 }
 
 //蓝牙通讯任务
 void bluetooth_task(void *p_arg)
 {
-//	u16 date_temp = 0;
 	OS_ERR err;
 	p_arg = p_arg;
 	

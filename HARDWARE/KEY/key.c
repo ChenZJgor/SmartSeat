@@ -14,12 +14,12 @@ void KEY_Init(void)
 	GPIO_PinRemapConfig(GPIO_Remap_SWJ_JTAGDisable, ENABLE);//关闭jtag，使能SWD，可以用SWD模式调试
 	
 	GPIO_InitStructure.GPIO_Pin  = GPIO_Pin_15;//PA15
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU; //设置成浮空输入
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPD; //设置成下拉输入
  	GPIO_Init(GPIOA, &GPIO_InitStructure);//初始化GPIOA15
 	
  
 	GPIO_InitStructure.GPIO_Pin  = GPIO_Pin_7;//PA0
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU; //PA0设置成浮空输入  
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPD; //PA0设置成下拉输入
 	GPIO_Init(GPIOA, &GPIO_InitStructure);//初始化GPIOA.0
 	
 } 

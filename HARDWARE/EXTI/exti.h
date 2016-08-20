@@ -18,6 +18,7 @@ extern u8 strain_on;
 extern u8 bluetooth_on;
 								
 void EXTIX_Init(void);//IO初始化
+void EXTA15_Off(void);//关闭A.15外部中断
 		 					    
 #endif
 
