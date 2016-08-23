@@ -5,6 +5,7 @@
 #include "stm32f10x_bkp.h"
 #include "stm32f10x_pwr.h"
 #include "includes.h"
+#include "iwdg.h"
 
 //RTC中断配置
 static void RTC_NVIC_Config(void)
@@ -79,9 +80,12 @@ void RTC_Enter_StandbyMode(u32 s)
 void RTC_IRQHandler(void)
 {
 	OSIntEnter();
-	if(RTC_GetITStatus(RTC_IT_ALR)!= RESET){//闹钟中断
+	SystemInit();
+	if(RTC_GetITStatus(RTC_IT_ALR)!= RESET){//闹钟中断 
+		IWDG_Feed();
   	RTC_ClearITPendingBit(RTC_IT_ALR);  //清闹钟中断
-
+		RTC_SetAlarm(RTC_GetCounter() + WORK_TIMES);
+		RTC_WaitForLastTask();
 	//RTC_Enter_StandbyMode(STANDBY_TIMES);//进入待机
 	}
 	OSIntExit();

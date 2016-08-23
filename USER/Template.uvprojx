@@ -365,7 +365,7 @@
               <MiscControls></MiscControls>
               <Define>STM32F10X_HD,USE_STDPERIPH_DRIVER</Define>
               <Undefine></Undefine>
-              <IncludePath>..\HARDWARE\BEE;..\HARDWARE\WKUP;..\HARDWARE\POWER;..\HARDWARE\DS1302;..\HARDWARE\MOTOR;..\HARDWARE\ADC;..\HARDWARE\EXTI;..\HARDWARE\KEY;..\HARDWARE\RTC_Alarm;..\HARDWARE\24CXX;..\HARDWARE\IIC;..\USER;..\CORE;..\SYSTEM\delay;..\SYSTEM\sys;..\SYSTEM\gpio;..\SYSTEM\usart3;..\SYSTEM\usart;..\STM32F10x_FWLib\inc;..\FWLIB\STM32F10x_FWLib\inc;..\HARDWARE\LED;..\UCOSIII\uC-CPU;..\UCOSIII\uC-LIB;..\UCOSIII\uCOS-III;..\UCOSIII\UCOS_BSP;..\UCOSIII\uCOS_CONFIG;..\UCOSIII\uCOS-III\Source;..\UCOSIII\uC-CPU\ARM-Cortex-M3\RealView;..\UCOSIII\uC-LIB\Ports\ARM-Cortex-M3\RealView;..\UCOSIII\uCOS-III\Ports\ARM-Cortex-M3\Generic\RealView</IncludePath>
+              <IncludePath>..\HARDWARE\BEE;..\HARDWARE\WKUP;..\HARDWARE\POWER;..\HARDWARE\DS1302;..\HARDWARE\MOTOR;..\HARDWARE\ADC;..\HARDWARE\EXTI;..\HARDWARE\KEY;..\HARDWARE\RTC_Alarm;..\HARDWARE\IWDG;..\HARDWARE\24CXX;..\HARDWARE\IIC;..\USER;..\CORE;..\SYSTEM\delay;..\SYSTEM\sys;..\SYSTEM\gpio;..\SYSTEM\usart3;..\SYSTEM\usart;..\STM32F10x_FWLib\inc;..\FWLIB\STM32F10x_FWLib\inc;..\HARDWARE\LED;..\UCOSIII\uC-CPU;..\UCOSIII\uC-LIB;..\UCOSIII\uCOS-III;..\UCOSIII\UCOS_BSP;..\UCOSIII\uCOS_CONFIG;..\UCOSIII\uCOS-III\Source;..\UCOSIII\uC-CPU\ARM-Cortex-M3\RealView;..\UCOSIII\uC-LIB\Ports\ARM-Cortex-M3\RealView;..\UCOSIII\uCOS-III\Ports\ARM-Cortex-M3\Generic\RealView</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -488,6 +488,11 @@
               <FileType>1</FileType>
               <FilePath>..\HARDWARE\RTC_Alarm\RTC_Alarm.c</FilePath>
             </File>
+            <File>
+              <FileName>iwdg.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\HARDWARE\IWDG\iwdg.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -582,6 +587,11 @@
               <FileName>stm32f10x_rtc.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\FWLIB\STM32F10x_FWLib\src\stm32f10x_rtc.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f10x_iwdg.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\FWLIB\STM32F10x_FWLib\src\stm32f10x_iwdg.c</FilePath>
             </File>
           </Files>
         </Group>

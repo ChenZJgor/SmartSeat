@@ -17,6 +17,8 @@
 #include "wkup.h"
 #include "gpio.h"
 #include "RTC_Alarm.h"
+#include "iwdg.h"
+#include "stm32f10x_iwdg.h"
 
 
 //将这些优先级分配给了UCOSIII的5个系统内部任务
@@ -208,6 +210,8 @@ int main(void)
 	//DS1302_GPIO_Init();	//DS1302初始化
 	DS1302_Off();					//关闭DS1302
 	EXTIX_Init();		//外部中断初始化
+	IWDG_Init(IWDG_Prescaler_256,0x0fff);
+	RTC_Alarm_Configuration();
 	
 	OSInit(&err);		//初始化UCOSIII
 	OS_CRITICAL_ENTER();//进入临界区
@@ -431,8 +435,7 @@ void core_task(void *p_arg)
 	float correct_temp = 0;
 //	u8 datatemp[100]={0};
 //	u8 i ;
-//	u8 bt05_flag = 0;
-	
+//	u8 bt05_flag = 0;	
 	OS_ERR err;
 	p_arg = p_arg;
 	
@@ -470,7 +473,7 @@ void core_task(void *p_arg)
 		
 //		printf("adc running\n");
 //////////////////////////////////////////////
-		if(system_init_flag == 0){
+		if(system_init_flag == 0){			
 			if((Get_Adc_Average(ADC_Channel_3,10)) < 869){				
 				LED1_ON();
 				LED1 = ON;							 
@@ -485,12 +488,11 @@ void core_task(void *p_arg)
 				LED1_ON();
 				LED1 = ON;
 				delay_ms(100);								 
-				LED1_OFF();
+				LED1_OFF();				
 				
-				RTC_Alarm_Configuration();
 				Sys_Enter_Shutdown();
 			}
-			RTC_Off();
+//			RTC_Off();
 			AT24CXX_Init();							 
 			seattime = (AT24CXX_ReadLenByte(239,2)) * 60;									//读取坐下提醒时间
 			IIC_Off();
@@ -504,6 +506,10 @@ void core_task(void *p_arg)
 			RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, DISABLE);			//关闭GPIOA通道时钟
 			RCC_APB2PeriphClockCmd(	RCC_APB2Periph_GPIOB, DISABLE );		//关闭GPIOB通道时钟
 			system_init_flag = 1;
+			Sys_Enter_Standby();
+		}
+		
+		if(strain_on == 0 && bluetooth_on == 0){
 			Sys_Enter_Standby();
 		}
 
@@ -974,7 +980,7 @@ void battery_task(void *p_arg)
 			
 			//GPIOA.15	  开启A.15中断
 			EXTIX_Init();												//开启中断
-			RTC_Alarm_Configuration();					//开启RTC闹钟
+//			RTC_Alarm_Configuration();					//开启RTC闹钟
 			Sys_Enter_Shutdown();								//进入待机模式
 		}
 		if(battery < 880){

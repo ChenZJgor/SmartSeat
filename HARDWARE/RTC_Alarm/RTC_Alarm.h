@@ -14,7 +14,7 @@
 
 //宏定义，单位s，0-4294967295s(71582788.25min)
 //运行时间
-#define WORK_TIMES 30
+#define WORK_TIMES 20
 //待机时间
 #define STANDBY_TIMES 2
 

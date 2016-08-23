@@ -63,6 +63,9 @@ void SendString(u8 *string)
 extern u16 tmr_active_push;
 extern u16 tmr_active_count;
 extern u16 seattime;
+extern u8 posture_store;
+extern u16 balance;
+extern u8 balance_hour_flag;
 extern float tmr_active_correct;
 
 #if EN_USART3_RX   //如果使能了接收
@@ -190,6 +193,18 @@ void usart_scan(void)
 				Data_Store(tmr_active_count / 60);
 				tmr_active_count = 0;
 				
+				Posture_Store(posture_store);
+				DS1302_GPIO_Init();
+				Read_rtc();
+				time_pros();
+				DS1302_Off();
+				temp = disp[0] * 559 + disp[1] * 745 + disp[2] * 24 + disp[3];
+				AT24CXX_Init();	
+				AT24CXX_WriteLenByte(241,temp,2);
+				AT24CXX_WriteLenByte(243,balance,2);
+				IIC_Off();
+				balance_hour_flag = 0;	
+				
 				AT24CXX_Init();
 				for(t = 0; t < 8; t++){
 					AT24CXX_Read(1+t*29,datatemp,29);
@@ -206,6 +221,32 @@ void usart_scan(void)
 						printf("\n");
 				}
 				IIC_Off();
+			}
+			else if(strncmp((char*)USART3_TEMP,"NOW",3) == 0){
+				tmr_active_push += tmr_active_count;
+				correct_temp = (float)tmr_active_count / 60.0;
+				temp = tmr_active_count / 60;
+				tmr_active_correct = correct_temp - (float)temp;
+				Data_Store(tmr_active_count / 60);
+				tmr_active_count = 0;
+				
+				Posture_Store(posture_store);
+				DS1302_GPIO_Init();
+				Read_rtc();
+				time_pros();
+				DS1302_Off();
+				temp = disp[0] * 559 + disp[1] * 745 + disp[2] * 24 + disp[3];
+				AT24CXX_Init();	
+				AT24CXX_WriteLenByte(241,temp,2);
+				AT24CXX_WriteLenByte(243,balance,2);
+				balance_hour_flag = 0;
+				
+				len = AT24CXX_ReadOneByte(0);
+				len = 1 + 29 * len;
+				t = AT24CXX_ReadOneByte(disp[3]+5+len);
+				IIC_Off();
+				if(READ_BLU)
+					printf("%d\n",t);
 			}
 			else if(strncmp((char*)USART3_TEMP,"TIME",4) == 0){
 				time_data[0] = (USART3_TEMP[4] - 0x30) * 10 + (USART3_TEMP[5] - 0x30);
