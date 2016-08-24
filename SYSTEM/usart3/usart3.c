@@ -182,8 +182,12 @@ void usart_scan(void)
 			}
 			else if(strncmp((char*)USART3_TEMP,"BATTERY",7) == 0){
 				temp = Get_Adc_Average(ADC_Channel_3,10);
-				if(READ_BLU)
-					printf("battery = %d\n",temp);
+				if(READ_BLU){
+					if(temp > 880)
+						printf("POWEROK\n");
+					else
+						printf("POWERLOW\n");
+				}	
 			}
 			else if(strncmp((char*)USART3_TEMP,"PULL",4) == 0){
 				tmr_active_push += tmr_active_count;
@@ -246,7 +250,7 @@ void usart_scan(void)
 				t = AT24CXX_ReadOneByte(disp[3]+5+len);
 				IIC_Off();
 				if(READ_BLU)
-					printf("%d\n",t);
+					printf("NOW%d\n",t);
 			}
 			else if(strncmp((char*)USART3_TEMP,"TIME",4) == 0){
 				time_data[0] = (USART3_TEMP[4] - 0x30) * 10 + (USART3_TEMP[5] - 0x30);

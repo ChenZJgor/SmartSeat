@@ -985,6 +985,8 @@ void battery_task(void *p_arg)
 		}
 		if(battery < 880){
 			lowpower_flag = 1;
+			LED0_OFF();
+			led_green_flag = OFF;
 			if(led_red_flag == OFF){
 				LED1_ON();
 				LED1 = ON;
