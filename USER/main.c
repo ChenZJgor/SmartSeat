@@ -21,17 +21,6 @@
 #include "stm32f10x_iwdg.h"
 
 
-//将这些优先级分配给了UCOSIII的5个系统内部任务
-//优先级0：中断服务服务管理任务 OS_IntQTask()
-//优先级1：时钟节拍任务 OS_TickTask()
-//优先级2：定时任务 OS_TmrTask()
-//优先级OS_CFG_PRIO_MAX-2：统计任务 OS_StatTask()
-//优先级OS_CFG_PRIO_MAX-1：空闲任务 OS_IdleTask()
-//技术支持：www.openedv.com
-//淘宝店铺：http://eboard.taobao.com  
-//广州市星翼电子科技有限公司  
-//作者：正点原子 @ALIENTEK
-
 //任务优先级
 #define START_TASK_PRIO		3
 //任务堆栈大小	
@@ -149,10 +138,10 @@ u8 led_green_flag = 0;	//绿色LED灯状态标志位
 u8 led_red_flag = 0;		//红色LED灯状态标志位
 u8 store_hour_flag = 0;	//小时储存标志
 u8 system_init_flag = 0;	//系统初始化标志位
-u8 balance_hour_flag = 0;
+u8 balance_hour_flag = 0;	//坐姿储存标志
 //u8 time_set_flag = 0;
 
-float tmr_active_correct = 0;
+float tmr_active_correct = 0;	//储存数据纠正
 
 u16 balance = 0;
 u16 balance_level = 0;
@@ -433,48 +422,13 @@ void core_task(void *p_arg)
 	u16 adc_left = 0,adc_right = 0, adc_diff = 0;
 	u16 temp = 0,temp_date = 0;
 	float correct_temp = 0;
-//	u8 datatemp[100]={0};
-//	u8 i ;
-//	u8 bt05_flag = 0;	
 	OS_ERR err;
 	p_arg = p_arg;
 	
 	while(1)
 	{
-//调试代码
-//////////////////////////////////////////////		
-/*		
-		if(bt05_flag == 0){
-			memset(USART3_TX_BUF,0,200);
-			strcpy((char*)USART3_TX_BUF,"AT\r\n");
-			SendString(USART3_TX_BUF);
-			bt05_flag = 1;
-			printf("cmd send\n");
-		}*/
-
-		//printf("AT\n\r");
-		//Bee_Contrl(BEE_ACTIVE);
-		//Motor_Contrl(MOTOR_ACTIVE);	
-/*		if(time_init_flag == 0){
-			AT24CXX_Init();
-			AT24CXX_Write(146,datatemp,87);
-			time_init_flag = 1;
-		}*/
-/*		Posture_Store('A');
-		AT24CXX_Init();
-		AT24CXX_Read(0,datatemp,54);
-		for(i = 0; i < 54; i++)
-			printf("data %d = %d  \n",i,datatemp[i]);
-		IIC_Off();
-*/
-//		AT24CXX_WriteOneByte(255,66);
-//		i = AT24CXX_ReadOneByte(255);
-//		printf("data = %d  \n",i);
-		
-//		printf("adc running\n");
-//////////////////////////////////////////////
-		if(system_init_flag == 0){			
-			if((Get_Adc_Average(ADC_Channel_3,10)) < 869){				
+		if(system_init_flag == 0){																				//系统初始化
+			if((Get_Adc_Average(ADC_Channel_3,10)) < 869){									//电量过低自动关机
 				LED1_ON();
 				LED1 = ON;							 
 				delay_ms(100);
@@ -509,14 +463,14 @@ void core_task(void *p_arg)
 			Sys_Enter_Standby();
 		}
 		
-		if(strain_on == 0 && bluetooth_on == 0){
+		if(strain_on == 0 && bluetooth_on == 0){											//系统空闲自动休眠
 			Sys_Enter_Standby();
 		}
 
 		if(strain_on){
-			EXTA15_Off();	//GPIOA.15	  关闭A.15外部中断			
+			EXTA15_Off();																								//GPIOA.15	  关闭A.15外部中断			
 			
-			Adc_Init();	//开启ADC1
+			Adc_Init();														//开启ADC1
 			
 			if(power_flag == OFF){
 				Power_Contrl(POWER_ACTIVE);					//开启应变片激励电源
@@ -565,16 +519,16 @@ void core_task(void *p_arg)
 				}
 			}
 			
-			adc_left = Get_Adc_Average(ADC_Channel_1,10);
-			adc_right = Get_Adc_Average(ADC_Channel_2,10);
+			adc_left = Get_Adc_Average(ADC_Channel_1,10);						//获取左端电压值
+			adc_right = Get_Adc_Average(ADC_Channel_2,10);					//获取右端电压值
 //			printf("adc green = %d, adc blue = %d\n",adc_left,adc_right);
 			if(adc_left - adc_right > 0)
-				adc_diff = adc_left - adc_right;	//获取两组应变片之间的输出电压差
+				adc_diff = adc_left - adc_right;											//获取两组应变片之间的输出电压差
 			else if(adc_left - adc_right < 0)
 				adc_diff = adc_right - adc_left;
 			else
 				adc_diff = 0;
-			if(balance_hour_flag == 0){
+			if(balance_hour_flag == 0){															//坐姿检测
 				DS1302_GPIO_Init();
 				Read_rtc();
 				time_pros();
@@ -595,12 +549,12 @@ void core_task(void *p_arg)
 				OSSemPost (&ActiveSem, OS_OPT_POST_1, &err);	//发送激活信号量
 //				if(READ_BLU)
 //					printf("adc diff = %d\n",adc_diff);
-				if(balance >= 370){
+				if(balance >= 370){														//坐姿检测
 					balance_level = balance - 370;
 //				if(READ_BLU)
 //					printf("diff level more than 500 = %d\n\r",balance_level);
 				}
-				else if(balance < 370){
+				else if(balance < 370){												//坐姿检测
 					balance_level = 370 - balance;
 //				if(READ_BLU)
 //					printf("diff level less than 500 = %d\n\r",adc_diff_level);
@@ -746,25 +700,26 @@ void timeout_task(void *p_arg)
 			OSTmrStop (&tmr_active,OS_OPT_TMR_NONE,0,&err);
 			OSTmrStop (&tmr_negative,OS_OPT_TMR_NONE,0,&err);
 			
-			data_store = ((u16)(tmr_active_correct + 0.6)) + tmr_active_count / 60;
-			Data_Store(data_store);
-			tmr_active_push = 0;
-			tmr_active_count = 0;															//应变片激活计时器清零
-			tmr_active_correct = 0;
-			store_hour_flag = 0;															//小时储存标志位清零
-			
-			Posture_Store(posture_store);
-			DS1302_GPIO_Init();
-			Read_rtc();
-			time_pros();
-			DS1302_Off();
-			data_store = disp[0] * 559 + disp[1] * 745 + disp[2] * 24 + disp[3];
-			AT24CXX_Init();	
-			AT24CXX_WriteLenByte(241,data_store,2);
-			AT24CXX_WriteLenByte(243,balance,2);
-			IIC_Off();
-			balance_hour_flag = 0;	
-
+			if(tmr_active_count + tmr_active_push >= 60){
+				data_store = ((u16)(tmr_active_correct + 0.6)) + tmr_active_count / 60;
+				Data_Store(data_store);
+				tmr_active_push = 0;
+				tmr_active_count = 0;															//应变片激活计时器清零
+				tmr_active_correct = 0;
+				store_hour_flag = 0;															//小时储存标志位清零
+				
+				Posture_Store(posture_store);
+				DS1302_GPIO_Init();
+				Read_rtc();
+				time_pros();
+				DS1302_Off();
+				data_store = disp[0] * 559 + disp[1] * 745 + disp[2] * 24 + disp[3];
+				AT24CXX_Init();	
+				AT24CXX_WriteLenByte(241,data_store,2);
+				AT24CXX_WriteLenByte(243,balance,2);
+				IIC_Off();
+				balance_hour_flag = 0;	
+			}
 			strain_on = 0;
 			tmr_negative_timeout = 0;
 			tmr_negative_count = 0;
@@ -1036,6 +991,7 @@ void tmr_timeout_callback(void *p_tmr, void *p_arg)
 	}
 }
 
+//运动定时器回调函数
 void tmr_sport_callback(void *p_tmr, void *p_arg)
 {
 	tmr_sport_count++;
@@ -1045,6 +1001,7 @@ void tmr_sport_callback(void *p_tmr, void *p_arg)
 	}
 }
 
+//小时储存定时器回调函数
 void tmr_store_callback(void *p_tmr, void *p_arg)
 {
 	tmr_store_count++;

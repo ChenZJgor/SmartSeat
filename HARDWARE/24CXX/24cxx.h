@@ -1,11 +1,7 @@
 #ifndef __24CXX_H
 #define __24CXX_H
 #include "myiic.h"   
-//Mini STM32开发板
-//24CXX驱动函数(适合24C01~24C16,24C32~256未经过测试!有待验证!)
-//正点原子@ALIENTEK
-//2010/6/10
-//V1.2
+
 #define AT24C01		127
 #define AT24C02		255
 #define AT24C04		511

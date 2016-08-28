@@ -5,11 +5,7 @@
 #include "delay.h"
 #include "ds1302.h"
 #include "usart3.h"	
-//Mini STM32开发板
-//24CXX驱动函数(适合24C01~24C16,24C32~256未经过测试!有待验证!)
-//正点原子@ALIENTEK
-//2010/6/10
-//V1.2
+
 
 u8 store_stack[29] = {0};	//储存缓冲区
 
