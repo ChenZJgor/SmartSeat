@@ -23,6 +23,7 @@
 #define LED1 PAout(11)	// PA11	
 
 void LED_Init(void);//≥ı ºªØ
+void LED_Red_Blink(void);	//LED∫Ï…¡À∏
 
 		 				    
 #endif

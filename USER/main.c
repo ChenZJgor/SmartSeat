@@ -19,6 +19,7 @@
 #include "RTC_Alarm.h"
 #include "iwdg.h"
 #include "stm32f10x_iwdg.h"
+#include "project.h"
 
 
 //任务优先级
@@ -118,9 +119,6 @@ void battery_task(void *p_arg);
 #define OK 2
 #define BAD 3
 #define SERIOUS 4
-
-#define ON 1
-#define OFF 0 
 
 u16 seattime = 1800;	//最长静坐时间，N*1s
 
@@ -429,20 +427,7 @@ void core_task(void *p_arg)
 	{
 		if(system_init_flag == 0){																				//系统初始化
 			if((Get_Adc_Average(ADC_Channel_3,10)) < 869){									//电量过低自动关机
-				LED1_ON();
-				LED1 = ON;							 
-				delay_ms(100);
-				LED1_OFF();
-				delay_ms(100);							 
-				LED1_ON();
-				LED1 = ON;
-				delay_ms(100);							 
-				LED1_OFF();	
-				delay_ms(100);								 
-				LED1_ON();
-				LED1 = ON;
-				delay_ms(100);								 
-				LED1_OFF();				
+				LED_Red_Blink();
 				
 				Sys_Enter_Shutdown();
 			}

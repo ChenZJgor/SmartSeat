@@ -1,4 +1,6 @@
 #include "led.h" 
+#include "project.h"
+#include "delay.h"
 
 //初始化PA8和PA11为输出口.并使能这两个口的时钟		    
 //LED IO初始化
@@ -19,4 +21,21 @@ void LED_Init(void)
  GPIO_Init(GPIOA, &GPIO_InitStructure);	  				 //推挽输出 ，IO口速度为50MHz
 // GPIO_ResetBits(GPIOA,GPIO_Pin_11); 						 //PA.11输出低
 }
- 
+
+void LED_Red_Blink(void)
+{
+		LED1_ON();
+		LED1 = ON;							 
+		delay_ms(100);
+		LED1_OFF();
+		delay_ms(100);							 
+		LED1_ON();
+		LED1 = ON;
+		delay_ms(100);							 
+		LED1_OFF();	
+		delay_ms(100);								 
+		LED1_ON();
+		LED1 = ON;
+		delay_ms(100);								 
+		LED1_OFF();	
+}
