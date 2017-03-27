@@ -166,50 +166,66 @@
         <Bp>
           <Number>0</Number>
           <Type>0</Type>
-          <LineNumber>128</LineNumber>
-          <EnabledFlag>1</EnabledFlag>
-          <Address>134228596</Address>
-          <ByteObject>0</ByteObject>
-          <HtxType>0</HtxType>
-          <ManyObjects>0</ManyObjects>
-          <SizeOfObject>0</SizeOfObject>
-          <BreakByAccess>0</BreakByAccess>
-          <BreakIfRCount>1</BreakIfRCount>
-          <Filename>G:\涓嬭浇\3锛屾墿灞曚緥绋?4锛孶COS鎵╁睍渚嬬▼\TEST\SmartSeat\SYSTEM\usart3\usart3.c</Filename>
-          <ExecCommand></ExecCommand>
-          <Expression>\\MALLOC\../SYSTEM/usart3/usart3.c\128</Expression>
-        </Bp>
-        <Bp>
-          <Number>1</Number>
-          <Type>0</Type>
           <LineNumber>163</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>134228730</Address>
+          <Address>134229068</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
           <SizeOfObject>0</SizeOfObject>
           <BreakByAccess>0</BreakByAccess>
           <BreakIfRCount>1</BreakIfRCount>
-          <Filename>G:\涓嬭浇\3锛屾墿灞曚緥绋?4锛孶COS鎵╁睍渚嬬▼\TEST\SmartSeat\SYSTEM\usart3\usart3.c</Filename>
+          <Filename>..\SYSTEM\usart3\usart3.c</Filename>
           <ExecCommand></ExecCommand>
           <Expression>\\MALLOC\../SYSTEM/usart3/usart3.c\163</Expression>
         </Bp>
         <Bp>
-          <Number>2</Number>
+          <Number>1</Number>
           <Type>0</Type>
           <LineNumber>165</LineNumber>
           <EnabledFlag>1</EnabledFlag>
-          <Address>134228742</Address>
+          <Address>134229082</Address>
           <ByteObject>0</ByteObject>
           <HtxType>0</HtxType>
           <ManyObjects>0</ManyObjects>
           <SizeOfObject>0</SizeOfObject>
           <BreakByAccess>0</BreakByAccess>
           <BreakIfRCount>1</BreakIfRCount>
-          <Filename>G:\涓嬭浇\3锛屾墿灞曚緥绋?4锛孶COS鎵╁睍渚嬬▼\TEST\SmartSeat\SYSTEM\usart3\usart3.c</Filename>
+          <Filename>..\SYSTEM\usart3\usart3.c</Filename>
           <ExecCommand></ExecCommand>
           <Expression>\\MALLOC\../SYSTEM/usart3/usart3.c\165</Expression>
+        </Bp>
+        <Bp>
+          <Number>2</Number>
+          <Type>0</Type>
+          <LineNumber>429</LineNumber>
+          <EnabledFlag>1</EnabledFlag>
+          <Address>134220732</Address>
+          <ByteObject>0</ByteObject>
+          <HtxType>0</HtxType>
+          <ManyObjects>0</ManyObjects>
+          <SizeOfObject>0</SizeOfObject>
+          <BreakByAccess>0</BreakByAccess>
+          <BreakIfRCount>1</BreakIfRCount>
+          <Filename>.\main.c</Filename>
+          <ExecCommand></ExecCommand>
+          <Expression>\\MALLOC\main.c\429</Expression>
+        </Bp>
+        <Bp>
+          <Number>3</Number>
+          <Type>0</Type>
+          <LineNumber>0</LineNumber>
+          <EnabledFlag>1</EnabledFlag>
+          <Address>536867766</Address>
+          <ByteObject>0</ByteObject>
+          <HtxType>0</HtxType>
+          <ManyObjects>0</ManyObjects>
+          <SizeOfObject>0</SizeOfObject>
+          <BreakByAccess>0</BreakByAccess>
+          <BreakIfRCount>1</BreakIfRCount>
+          <Filename></Filename>
+          <ExecCommand></ExecCommand>
+          <Expression></Expression>
         </Bp>
       </Breakpoint>
       <Tracepoint>

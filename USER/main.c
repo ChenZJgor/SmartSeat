@@ -506,7 +506,7 @@ void core_task(void *p_arg)
 			
 			adc_left = Get_Adc_Average(ADC_Channel_1,10);						//获取左端电压值
 			adc_right = Get_Adc_Average(ADC_Channel_2,10);					//获取右端电压值
-//			printf("adc green = %d, adc blue = %d\n",adc_left,adc_right);
+			printf("adc left = %d, adc right = %d\n",adc_left,adc_right);
 			if(adc_left - adc_right > 0)
 				adc_diff = adc_left - adc_right;											//获取两组应变片之间的输出电压差
 			else if(adc_left - adc_right < 0)
